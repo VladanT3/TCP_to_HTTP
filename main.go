@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"log"
-	"os"
+	"net"
+	"strings"
 )
 
 func getLinesChannel(f io.ReadCloser) <-chan string {
@@ -15,20 +15,22 @@ func getLinesChannel(f io.ReadCloser) <-chan string {
 
 	go func() {
 		for {
-			_, err := f.Read(chunk)
+			n, err := f.Read(chunk)
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				log.Fatal("Error reading from file: ", err)
+				log.Fatal("Error reading from connection: ", err)
 			}
 
-			parts := bytes.Split(chunk, []byte{'\n'})
-			line += string(parts[0])
+			parts := strings.Split(string(chunk[:n]), "\n")
 			if len(parts) > 1 {
+				line += string(parts[0])
 				line_ch <- line
-				line = "" + string(parts[1])
+				line = ""
 			}
+			line += string(parts[len(parts)-1])
 		}
+		line_ch <- line
 		close(line_ch)
 		f.Close()
 	}()
@@ -37,12 +39,23 @@ func getLinesChannel(f io.ReadCloser) <-chan string {
 }
 
 func main() {
-	file, err := os.Open("messages.txt")
+	listener, err := net.Listen("tcp", ":42069")
 	if err != nil {
-		log.Fatal("Unable to open file: ", err)
+		log.Fatal("Error creating TCP listener: ", err)
 	}
-	lines := getLinesChannel(file)
-	for line := range lines {
-		fmt.Printf("read: %s\n", line)
+	defer listener.Close()
+
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Fatal("Error accepting connection: ", err)
+		}
+		fmt.Println("Connection accepted.")
+
+		lines := getLinesChannel(conn)
+		for line := range lines {
+			fmt.Printf("%s\n", line)
+		}
+		fmt.Println("Connection closed.")
 	}
 }
