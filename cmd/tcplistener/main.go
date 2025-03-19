@@ -24,11 +24,11 @@ func getLinesChannel(f io.ReadCloser) <-chan string {
 
 			parts := strings.Split(string(chunk[:n]), "\n")
 			if len(parts) > 1 {
-				line += string(parts[0])
+				line += parts[0]
 				line_ch <- line
 				line = ""
 			}
-			line += string(parts[len(parts)-1])
+			line += parts[len(parts)-1]
 		}
 		line_ch <- line
 		close(line_ch)
