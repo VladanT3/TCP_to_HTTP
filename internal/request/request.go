@@ -3,25 +3,23 @@ package request
 import (
 	"errors"
 	"io"
-	"strings"
+
+	"github.com/VladanT3/TCP_to_HTTP/internal/headers"
+	"github.com/VladanT3/TCP_to_HTTP/internal/request_line"
 )
 
 type state int
 
 const (
 	initialized state = iota
+	parsing_headers
 	done
 )
 
 type Request struct {
-	RequestLine RequestLine
+	RequestLine request_line.RequestLine
+	Headers     headers.Headers
 	ParserState state
-}
-
-type RequestLine struct {
-	Method        string
-	RequestTarget string
-	HttpVersion   string
 }
 
 type chunkReader struct {
@@ -37,17 +35,19 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 	read_to_index := 0
 
 	request := &Request{
-		ParserState: 0,
+		RequestLine: request_line.RequestLine{},
+		Headers:     make(headers.Headers),
+		ParserState: initialized,
 	}
 
-	for request.ParserState != 1 {
+	for request.ParserState != done {
 		if read_to_index >= buffer_size {
 			buf, buffer_size = growSlice(buf)
 		}
 
 		bytes_read, err := reader.Read(buf[read_to_index:])
 		if err == io.EOF {
-			request.ParserState = 1
+			request.ParserState = done
 			if bytes_read == 0 {
 				break
 			}
@@ -69,64 +69,36 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 	return request, nil
 }
 
-func parseRequestLine(data []byte) (RequestLine, int, error) {
-	split_req := strings.Split(string(data), "\r\n")
-
-	if len(split_req) < 2 {
-		return RequestLine{}, 0, nil
-	}
-
-	req_line_parts := strings.Split(split_req[0], " ")
-	if len(req_line_parts) != 3 {
-		return RequestLine{}, 0, errors.New("Invalid request line.")
-	}
-
-	method := req_line_parts[0]
-	target := req_line_parts[1]
-	http_ver := req_line_parts[2]
-	if http_ver != "HTTP/1.1" {
-		return RequestLine{}, 0, errors.New("Invalid HTTP version.")
-	}
-	if !strings.Contains(target, "/") || strings.Contains(target, " ") {
-		return RequestLine{}, 0, errors.New("Invalid request target.")
-	}
-	switch method {
-	case "CONNECT":
-	case "DELETE":
-	case "GET":
-	case "HEAD":
-	case "OPTIONS":
-	case "PATCH":
-	case "POST":
-	case "PUT":
-	case "TRACE":
-	default:
-		return RequestLine{}, 0, errors.New("Invalid method.")
-	}
-	req_line := RequestLine{
-		Method:        method,
-		RequestTarget: target,
-		HttpVersion:   http_ver,
-	}
-
-	return req_line, len(split_req[0]), nil
-}
-
 func (r *Request) parse(data []byte) (int, error) {
-	if r.ParserState == 0 {
-		req_line, bytes_read, err := parseRequestLine(data)
+	switch r.ParserState {
+	case initialized:
+		req_line, bytes_read, err := request_line.ParseRequestLine(data)
 		if err != nil {
 			return 0, err
 		} else if bytes_read == 0 {
 			return 0, nil
 		} else {
 			r.RequestLine = req_line
-			r.ParserState = 1
+			r.ParserState = parsing_headers
 			return bytes_read, nil
 		}
-	} else if r.ParserState == 1 {
+	case parsing_headers:
+		n, finished_parsing, err := r.Headers.Parse(data)
+		if err != nil {
+			return 0, err
+		}
+		if n == 0 && !finished_parsing {
+			return 0, nil
+		}
+
+		if finished_parsing {
+			r.ParserState = done
+		}
+
+		return n, nil
+	case done:
 		return 0, errors.New("Trying to read data in a done state.")
-	} else {
+	default:
 		return 0, errors.New("Unknown state.")
 	}
 }
