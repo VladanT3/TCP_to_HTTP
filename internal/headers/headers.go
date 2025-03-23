@@ -62,20 +62,20 @@ func isKeyValid(key string) bool {
 		}
 
 		switch true {
-		case int(char) == int('!'):
-		case int(char) == int('#'):
-		case int(char) == int('$'):
-		case int(char) == int('%'):
+		case char == '!':
+		case char == '#':
+		case char == '$':
+		case char == '%':
 		case int(char) == 39: // singe tick: '
-		case int(char) == int('*'):
-		case int(char) == int('+'):
-		case int(char) == int('-'):
-		case int(char) == int('.'):
-		case int(char) == int('^'):
-		case int(char) == int('_'):
-		case int(char) == int('`'):
-		case int(char) == int('|'):
-		case int(char) == int('~'):
+		case char == '*':
+		case char == '+':
+		case char == '-':
+		case char == '.':
+		case char == '^':
+		case char == '_':
+		case char == '`':
+		case char == '|':
+		case char == '~':
 		default:
 			return false
 		}
