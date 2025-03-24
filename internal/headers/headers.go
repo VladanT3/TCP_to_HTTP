@@ -81,3 +81,13 @@ func isKeyValid(key string) bool {
 
 	return true
 }
+
+func (h Headers) Get(key string) (string, bool) {
+	key = strings.ToLower(key)
+	value, ok := h[key]
+	if !ok {
+		return "", false
+	} else {
+		return value, true
+	}
+}

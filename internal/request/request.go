@@ -3,6 +3,7 @@ package request
 import (
 	"errors"
 	"io"
+	"strconv"
 
 	"github.com/VladanT3/TCP_to_HTTP/internal/headers"
 	"github.com/VladanT3/TCP_to_HTTP/internal/request_line"
@@ -13,12 +14,14 @@ type state int
 const (
 	initialized state = iota
 	parsing_headers
+	parsing_body
 	done
 )
 
 type Request struct {
 	RequestLine request_line.RequestLine
 	Headers     headers.Headers
+	Body        []byte
 	ParserState state
 }
 
@@ -37,6 +40,7 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 	request := &Request{
 		RequestLine: request_line.RequestLine{},
 		Headers:     make(headers.Headers),
+		Body:        []byte{},
 		ParserState: initialized,
 	}
 
@@ -47,6 +51,10 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 
 		bytes_read, err := reader.Read(buf[read_to_index:])
 		if err == io.EOF {
+			err := request.ValidBody()
+			if err != nil {
+				return nil, err
+			}
 			request.ParserState = done
 			if bytes_read == 0 {
 				break
@@ -92,10 +100,21 @@ func (r *Request) parse(data []byte) (int, error) {
 		}
 
 		if finished_parsing {
-			r.ParserState = done
+			r.ParserState = parsing_body
 		}
 
 		return n, nil
+	case parsing_body:
+		_, exists := r.Headers.Get("content-length")
+		if !exists && len(data) == 0 {
+			r.ParserState = done
+			return 0, nil
+		} else if !exists && len(data) > 0 {
+			return 0, errors.New("Content-Length is absent but body exists.")
+		}
+
+		r.Body = append(r.Body, data...)
+		return len(data), nil
 	case done:
 		return 0, errors.New("Trying to read data in a done state.")
 	default:
@@ -125,4 +144,20 @@ func growSlice[T any](slice []T) ([]T, int) {
 	new_slice := make([]T, cap(slice)*2, cap(slice)*2)
 	copy(new_slice, slice)
 	return new_slice, cap(new_slice)
+}
+
+func (r *Request) ValidBody() error {
+	con_len_str, exists := r.Headers.Get("content-length")
+	if !exists {
+		con_len_str = "0"
+	}
+	con_len, err := strconv.Atoi(con_len_str)
+	if err != nil {
+		return err
+	}
+	if len(r.Body) != con_len {
+		return errors.New("Content-Length doesn't match actual body length.")
+	}
+
+	return nil
 }
