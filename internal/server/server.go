@@ -5,6 +5,8 @@ import (
 	"net"
 	"strconv"
 	"sync/atomic"
+
+	"github.com/VladanT3/TCP_to_HTTP/internal/response"
 )
 
 type Server struct {
@@ -50,6 +52,15 @@ func (s *Server) listen() {
 }
 
 func (s *Server) handle(conn net.Conn) {
-	conn.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello World!"))
+	err := response.WriteStatusLine(conn, 200)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = response.WriteHeaders(conn, response.GetDefaultHeaders(0))
+	if err != nil {
+		log.Println(err)
+	}
+
 	conn.Close()
 }
