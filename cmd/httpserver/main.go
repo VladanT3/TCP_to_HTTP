@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -14,27 +12,14 @@ import (
 )
 
 func handler(w io.Writer, req *request.Request) *server.HandlerError {
-	fmt.Println("\tENTERED HANDLER FUNC\n\t================================================\n")
 	if req.RequestLine.RequestTarget == "/yourproblem" {
-		fmt.Println("\tYour problem")
 		return &server.HandlerError{StatusCode: 400, Message: "Your problem is not my problem\n"}
 	} else if req.RequestLine.RequestTarget == "/myproblem" {
-		fmt.Println("\tMy problem")
 		return &server.HandlerError{StatusCode: 500, Message: "Woopsie, my bad\n"}
 	} else {
-		fmt.Println("\tGood request")
-		test := bytes.NewBuffer([]byte{})
-		multi_writer := io.MultiWriter(w, test)
-		_, err := multi_writer.Write([]byte("All good, frfr\n"))
-		if err != nil {
-			fmt.Println("\tError in handler when writing.")
-			return &server.HandlerError{StatusCode: 500, Message: err.Error()}
-		}
-		fmt.Println("\tWrote successfully in handler.")
-		fmt.Printf("\tWrote: %s\n", test.Bytes())
+		w.Write([]byte("All good, frfr\n"))
+		return nil
 	}
-	fmt.Println("\tEXITING HANDLER FUNC\n\t=====================================\n")
-	return nil
 }
 
 const port = 42069
