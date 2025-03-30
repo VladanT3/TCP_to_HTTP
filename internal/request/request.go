@@ -56,9 +56,7 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 				return nil, err
 			}
 			request.ParserState = done
-			if bytes_read == 0 {
-				break
-			}
+			break
 		} else if err != nil {
 			return nil, err
 		}

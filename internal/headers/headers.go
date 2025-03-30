@@ -91,3 +91,13 @@ func (h Headers) Get(key string) (string, bool) {
 		return value, true
 	}
 }
+
+func (h Headers) Edit(key string, val string) error {
+	key = strings.ToLower(key)
+	_, ok := h[key]
+	if !ok {
+		return errors.New("Header key doesn't exist.")
+	}
+	h[key] = val
+	return nil
+}

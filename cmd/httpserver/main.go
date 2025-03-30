@@ -1,24 +1,88 @@
 package main
 
 import (
-	"io"
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
+	"github.com/VladanT3/TCP_to_HTTP/internal/headers"
 	"github.com/VladanT3/TCP_to_HTTP/internal/request"
+	"github.com/VladanT3/TCP_to_HTTP/internal/response"
 	"github.com/VladanT3/TCP_to_HTTP/internal/server"
 )
 
-func handler(w io.Writer, req *request.Request) *server.HandlerError {
+func handler(res *response.Writer, req *request.Request) {
 	if req.RequestLine.RequestTarget == "/yourproblem" {
-		return &server.HandlerError{StatusCode: 400, Message: "Your problem is not my problem\n"}
+		body := "<html>\n\t<head>\n\t\t<title>400 Bad Request</title>\n\t</head>\n\t<body>\n\t\t<h1>Bad Request</h1>\n\t\t<p>Your request honestly kinda sucked.</p>\n\t</body>\n</html>"
+
+		err := res.WriteStatusLine(400)
+		if err != nil {
+			log.Println("Error writing status line:", err)
+			return
+		}
+
+		custom_headers := make(headers.Headers)
+		custom_headers["content-type"] = "text/html"
+		custom_headers["content-length"] = strconv.Itoa(len(body))
+		err = res.WriteHeaders(custom_headers)
+		if err != nil {
+			log.Println("Error writing headers:", err)
+			return
+		}
+
+		err = res.WriteBody([]byte(body))
+		if err != nil {
+			log.Println("Error writing body:", err)
+			return
+		}
 	} else if req.RequestLine.RequestTarget == "/myproblem" {
-		return &server.HandlerError{StatusCode: 500, Message: "Woopsie, my bad\n"}
+		body := "<html>\n\t<head>\n\t\t<title>500 Internal Server Error</title>\n\t</head>\n\t<body>\n\t\t<h1>Internal Server Error</h1>\n\t\t<p>Okay, you know what? This one is on me.</p>\n\t</body>\n</html>"
+
+		err := res.WriteStatusLine(500)
+		if err != nil {
+			log.Println("Error writing status line:", err)
+			return
+		}
+
+		custom_headers := make(headers.Headers)
+		custom_headers["content-type"] = "text/html"
+		custom_headers["content-length"] = strconv.Itoa(len(body))
+		err = res.WriteHeaders(custom_headers)
+		if err != nil {
+			log.Println("Error writing headers:", err)
+			return
+		}
+
+		err = res.WriteBody([]byte(body))
+		if err != nil {
+			log.Println("Error writing body:", err)
+			return
+		}
 	} else {
-		w.Write([]byte("All good, frfr\n"))
-		return nil
+		body := "<html>\n\t<head>\n\t\t<title>200 OK</title>\n\t</head>\n\t<body>\n\t\t<h1>Success!</h1>\n\t\t<p>Your request was an absolute banger.</p>\n\t</body>\n</html>"
+
+		err := res.WriteStatusLine(200)
+		if err != nil {
+			log.Println("Error writing status line:", err)
+			return
+		}
+
+		custom_headers := make(headers.Headers)
+		custom_headers["content-type"] = "text/html"
+		custom_headers["content-length"] = strconv.Itoa(len(body))
+		err = res.WriteHeaders(custom_headers)
+		if err != nil {
+			log.Println("Error writing headers:", err)
+			return
+		}
+
+		err = res.WriteBody([]byte(body))
+		if err != nil {
+			log.Println("Error writing body:", err)
+			return
+		}
 	}
 }
 
