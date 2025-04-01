@@ -10,9 +10,12 @@ type Headers map[string]string
 func ParseHeaders(data []byte) (Headers, error) {
 	headers := make(Headers)
 
-	parts := strings.SplitSeq(string(data), "\r\n")
+	parts := strings.Split(string(data), "\r\n")
+	if parts[len(parts)-2] != "" {
+		return nil, errors.New("Malformed Headers")
+	}
 
-	for part := range parts {
+	for _, part := range parts {
 		if part == "" {
 			break
 		}
@@ -27,7 +30,7 @@ func ParseHeaders(data []byte) (Headers, error) {
 
 		val := ""
 		if len(header) > 2 {
-			val = strings.Join(header[1:], "")
+			val = strings.Join(header[1:], ":")
 		} else {
 			val = header[1]
 		}

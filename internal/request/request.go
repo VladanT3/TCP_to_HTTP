@@ -19,14 +19,20 @@ type Request struct {
 func ParseRequest(conn io.Reader) (Request, error) {
 	req_buf := make([]byte, 1024)
 	total := 0
-	n := 0
 	var err error
 
-	for n, err = conn.Read(req_buf[total:]); n > 0; {
+	for {
+		n, err := conn.Read(req_buf[total:])
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return Request{}, err
+		}
+		if n < 1 {
+			break
+		}
 		total += n
-	}
-	if err != nil && err != io.EOF {
-		return Request{}, err
 	}
 
 	request := Request{}
@@ -42,7 +48,7 @@ func ParseRequest(conn io.Reader) (Request, error) {
 		return Request{}, err
 	}
 
-	request.Headers, err = headers.ParseHeaders(req_buf[pos+2 : body_pos])
+	request.Headers, err = headers.ParseHeaders(req_buf[pos+2 : body_pos+2])
 	if err != nil {
 		return Request{}, err
 	}
@@ -51,7 +57,7 @@ func ParseRequest(conn io.Reader) (Request, error) {
 	if !exists {
 		return request, nil
 	}
-	request.Body, err = body.ParseBody(req_buf[body_pos+2:], con_len)
+	request.Body, err = body.ParseBody(req_buf[body_pos+2:total], con_len)
 	if err != nil {
 		return Request{}, err
 	}
