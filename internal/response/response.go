@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/VladanT3/TCP_to_HTTP/internal/headers"
+	"github.com/VladanT3/TCP_to_HTTP/internal/request/headers"
 )
 
 type writer_state int

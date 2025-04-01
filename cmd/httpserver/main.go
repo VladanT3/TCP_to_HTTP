@@ -7,15 +7,15 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/VladanT3/TCP_to_HTTP/internal/headers"
 	"github.com/VladanT3/TCP_to_HTTP/internal/request"
+	"github.com/VladanT3/TCP_to_HTTP/internal/request/headers"
 	"github.com/VladanT3/TCP_to_HTTP/internal/response"
 	"github.com/VladanT3/TCP_to_HTTP/internal/server"
 )
 
 func handler(res *response.Writer, req *request.Request) {
-	if req.RequestLine.RequestTarget == "/yourproblem" {
-		body := "<html>\n\t<head>\n\t\t<title>400 Bad Request</title>\n\t</head>\n\t<body>\n\t\t<h1>Bad Request</h1>\n\t\t<p>Your request honestly kinda sucked.</p>\n\t</body>\n</html>"
+	if req.RequestLine.Target == "/yourproblem" {
+		body := "<html>\n\t<head>\n\t\t<title>400 Bad Request</title>\n\t</head>\n\t<body>\n\t\t<h1>Bad Request</h1>\n\t\t<p>Your request honestly kinda sucked.</p>\n\t</body>\n</html>\n"
 
 		err := res.WriteStatusLine(400)
 		if err != nil {
@@ -37,8 +37,8 @@ func handler(res *response.Writer, req *request.Request) {
 			log.Println("Error writing body:", err)
 			return
 		}
-	} else if req.RequestLine.RequestTarget == "/myproblem" {
-		body := "<html>\n\t<head>\n\t\t<title>500 Internal Server Error</title>\n\t</head>\n\t<body>\n\t\t<h1>Internal Server Error</h1>\n\t\t<p>Okay, you know what? This one is on me.</p>\n\t</body>\n</html>"
+	} else if req.RequestLine.Target == "/myproblem" {
+		body := "<html>\n\t<head>\n\t\t<title>500 Internal Server Error</title>\n\t</head>\n\t<body>\n\t\t<h1>Internal Server Error</h1>\n\t\t<p>Okay, you know what? This one is on me.</p>\n\t</body>\n</html>\n"
 
 		err := res.WriteStatusLine(500)
 		if err != nil {
@@ -61,7 +61,7 @@ func handler(res *response.Writer, req *request.Request) {
 			return
 		}
 	} else {
-		body := "<html>\n\t<head>\n\t\t<title>200 OK</title>\n\t</head>\n\t<body>\n\t\t<h1>Success!</h1>\n\t\t<p>Your request was an absolute banger.</p>\n\t</body>\n</html>"
+		body := "<html>\n\t<head>\n\t\t<title>200 OK</title>\n\t</head>\n\t<body>\n\t\t<h1>Success!</h1>\n\t\t<p>Your request was an absolute banger.</p>\n\t</body>\n</html>\n"
 
 		err := res.WriteStatusLine(200)
 		if err != nil {

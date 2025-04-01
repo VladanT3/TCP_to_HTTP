@@ -22,12 +22,12 @@ func main() {
 		}
 		fmt.Println("Connection accepted.")
 
-		req, err := request.RequestFromReader(conn)
+		req, err := request.ParseRequest(conn)
 		if err != nil {
 			log.Fatal("Unable to proccess request: ", err)
 		}
 
-		fmt.Printf("Request line:\n- Method: %s\n- Target: %s\n- Version: %s\n", req.RequestLine.Method, req.RequestLine.RequestTarget, req.RequestLine.HttpVersion)
+		fmt.Printf("Request line:\n- Method: %s\n- Target: %s\n- Version: %s\n", req.RequestLine.Method, req.RequestLine.Target, req.RequestLine.HTTPVersion)
 		fmt.Println("Headers:")
 		for key, val := range req.Headers {
 			fmt.Printf("- %s: %s\n", key, val)

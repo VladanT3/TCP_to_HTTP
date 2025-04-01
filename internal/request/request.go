@@ -17,23 +17,9 @@ type Request struct {
 }
 
 func ParseRequest(conn io.Reader) (Request, error) {
-	req_buf := make([]byte, 1024)
-	total := 0
-	var err error
+	req_buf := make([]byte, 2048)
 
-	for {
-		n, err := conn.Read(req_buf[total:])
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return Request{}, err
-		}
-		if n < 1 {
-			break
-		}
-		total += n
-	}
+	total, err := conn.Read(req_buf)
 
 	request := Request{}
 

@@ -50,3 +50,13 @@ func (h Headers) Get(key string) (string, bool) {
 		return val, true
 	}
 }
+
+func (h Headers) Edit(key, val string) error {
+	_, ok := h[key]
+	if !ok {
+		return errors.New("Header Key doesn't exist")
+	}
+
+	h[key] = val
+	return nil
+}

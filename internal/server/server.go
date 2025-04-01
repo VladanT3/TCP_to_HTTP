@@ -60,7 +60,7 @@ func (s *Server) handle(conn net.Conn) {
 	defer conn.Close()
 
 	res := response.Writer{}
-	req, err := request.RequestFromReader(conn)
+	req, err := request.ParseRequest(conn)
 	if err != nil {
 		err := res.WriteStatusLine(400)
 		if err != nil {
@@ -81,7 +81,7 @@ func (s *Server) handle(conn net.Conn) {
 		return
 	}
 
-	s.Handler(&res, req)
+	s.Handler(&res, &req)
 	_, err = conn.Write(res.Data)
 	if err != nil {
 		log.Println("Error writing to connection:", err)
