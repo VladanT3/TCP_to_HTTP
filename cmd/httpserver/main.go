@@ -123,6 +123,31 @@ func handler(res *response.Writer, req *request.Request) {
 		if err != nil {
 			log.Println("Error writing trailers:", err)
 		}
+	} else if req.RequestLine.Target == "/video" {
+		body, err := os.ReadFile("assets/vim.mp4")
+		if err != nil {
+			log.Println("Error reading mp4 file:", err)
+		}
+
+		err = res.WriteStatusLine(200)
+		if err != nil {
+			log.Println("Error writing status line:", err)
+			return
+		}
+
+		custom_headers := response.GetDefaultHeaders(len(body))
+		custom_headers["Content-Type"] = "video/mp4"
+		err = res.WriteHeaders(custom_headers)
+		if err != nil {
+			log.Println("Error writing headers:", err)
+			return
+		}
+
+		err = res.WriteBody(body)
+		if err != nil {
+			log.Println("Error writing body:", err)
+			return
+		}
 	} else {
 		body := "<html>\n\t<head>\n\t\t<title>200 OK</title>\n\t</head>\n\t<body>\n\t\t<h1>Success!</h1>\n\t\t<p>Your request was an absolute banger.</p>\n\t</body>\n</html>\n"
 
