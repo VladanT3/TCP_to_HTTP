@@ -1,14 +1,15 @@
 package main
 
 import (
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
+	"strings"
 	"syscall"
 
 	"github.com/VladanT3/TCP_to_HTTP/internal/request"
-	"github.com/VladanT3/TCP_to_HTTP/internal/request/headers"
 	"github.com/VladanT3/TCP_to_HTTP/internal/response"
 	"github.com/VladanT3/TCP_to_HTTP/internal/server"
 )
@@ -23,9 +24,8 @@ func handler(res *response.Writer, req *request.Request) {
 			return
 		}
 
-		custom_headers := make(headers.Headers)
+		custom_headers := response.GetDefaultHeaders(len(body))
 		custom_headers["content-type"] = "text/html"
-		custom_headers["content-length"] = strconv.Itoa(len(body))
 		err = res.WriteHeaders(custom_headers)
 		if err != nil {
 			log.Println("Error writing headers:", err)
@@ -46,9 +46,8 @@ func handler(res *response.Writer, req *request.Request) {
 			return
 		}
 
-		custom_headers := make(headers.Headers)
+		custom_headers := response.GetDefaultHeaders(len(body))
 		custom_headers["content-type"] = "text/html"
-		custom_headers["content-length"] = strconv.Itoa(len(body))
 		err = res.WriteHeaders(custom_headers)
 		if err != nil {
 			log.Println("Error writing headers:", err)
@@ -60,6 +59,53 @@ func handler(res *response.Writer, req *request.Request) {
 			log.Println("Error writing body:", err)
 			return
 		}
+	} else if strings.HasPrefix(req.RequestLine.Target, "/httpbin/") {
+		path := strings.TrimPrefix(req.RequestLine.Target, "/httpbin/")
+
+		err := res.WriteStatusLine(200)
+		if err != nil {
+			log.Println("Error writing status line:", err)
+			return
+		}
+
+		custom_headers := response.GetDefaultHeaders(0)
+		custom_headers["content-type"] = "application/json"
+		custom_headers["transfer-encoding"] = "chunked"
+		delete(custom_headers, "content-length")
+		err = res.WriteHeaders(custom_headers)
+		if err != nil {
+			log.Println("Error writing headers:", err)
+			return
+		}
+
+		resp, err := http.Get("https://httpbin.org/" + path)
+		if err != nil {
+			log.Println("Error making request to httpbin.org:", err)
+			return
+		}
+
+		for {
+			buf := make([]byte, 1024)
+			n, err := resp.Body.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Fatal("Error reading body from httpbin.org:", err)
+			}
+
+			_, err = res.WriteChunkedBody(buf[:n])
+			if err != nil {
+				log.Println("Error writing chunked body:", err)
+				return
+			}
+		}
+
+		_, err = res.WriteChunkedBodyDone()
+		if err != nil {
+			log.Println("Error writing chunked body done:", err)
+			return
+		}
 	} else {
 		body := "<html>\n\t<head>\n\t\t<title>200 OK</title>\n\t</head>\n\t<body>\n\t\t<h1>Success!</h1>\n\t\t<p>Your request was an absolute banger.</p>\n\t</body>\n</html>\n"
 
@@ -69,9 +115,8 @@ func handler(res *response.Writer, req *request.Request) {
 			return
 		}
 
-		custom_headers := make(headers.Headers)
+		custom_headers := response.GetDefaultHeaders(len(body))
 		custom_headers["content-type"] = "text/html"
-		custom_headers["content-length"] = strconv.Itoa(len(body))
 		err = res.WriteHeaders(custom_headers)
 		if err != nil {
 			log.Println("Error writing headers:", err)

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/VladanT3/TCP_to_HTTP/internal/request/headers"
 )
@@ -49,7 +48,7 @@ func (w *Writer) WriteStatusLine(status_code StatusCode) error {
 	return nil
 }
 
-func getDefaultHeaders(content_len int) headers.Headers {
+func GetDefaultHeaders(content_len int) headers.Headers {
 	header := make(headers.Headers)
 	header["content-length"] = strconv.Itoa(content_len)
 	header["connection"] = "close"
@@ -63,20 +62,8 @@ func (w *Writer) WriteHeaders(headers headers.Headers) error {
 		return errors.New("Writing headers out of order. Make sure you write the status line first and write headers before the body.")
 	}
 
-	default_headers := getDefaultHeaders(0)
-
-	if headers != nil {
-		for key, val := range headers {
-			key = strings.ToLower(key)
-			err := default_headers.Edit(key, val)
-			if err != nil {
-				default_headers[key] = val
-			}
-		}
-	}
-
 	data := ""
-	for key, val := range default_headers {
+	for key, val := range headers {
 		data += fmt.Sprintf("%s:%s\r\n", key, val)
 	}
 	data += "\r\n"
@@ -97,4 +84,14 @@ func (w *Writer) WriteBody(data []byte) error {
 
 func (w *Writer) Write(data []byte) {
 	w.Data = append(w.Data, data...)
+}
+
+func (w *Writer) WriteChunkedBody(p []byte) (int, error) {
+	data := fmt.Sprintf("%X\r\n%s\r\n", len(p), p)
+	w.Write([]byte(data))
+	return len(data), nil
+}
+func (w *Writer) WriteChunkedBodyDone() (int, error) {
+	w.Write([]byte("0\r\n\r\n"))
+	return 5, nil
 }
