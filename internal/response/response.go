@@ -14,6 +14,7 @@ const (
 	status_line writer_state = iota
 	field_lines
 	body
+	trailers
 	done
 )
 
@@ -50,9 +51,9 @@ func (w *Writer) WriteStatusLine(status_code StatusCode) error {
 
 func GetDefaultHeaders(content_len int) headers.Headers {
 	header := make(headers.Headers)
-	header["content-length"] = strconv.Itoa(content_len)
-	header["connection"] = "close"
-	header["content-type"] = "text/plain"
+	header["Content-Length"] = strconv.Itoa(content_len)
+	header["Connection"] = "close"
+	header["Content-Type"] = "text/plain"
 
 	return header
 }
@@ -87,11 +88,33 @@ func (w *Writer) Write(data []byte) {
 }
 
 func (w *Writer) WriteChunkedBody(p []byte) (int, error) {
+	if w.writerState != body {
+		return 0, errors.New("Writing body out of order. Make sure you write the status line and headers first.")
+	}
+
 	data := fmt.Sprintf("%X\r\n%s\r\n", len(p), p)
 	w.Write([]byte(data))
 	return len(data), nil
 }
+
 func (w *Writer) WriteChunkedBodyDone() (int, error) {
 	w.Write([]byte("0\r\n\r\n"))
+	w.writerState = trailers
 	return 5, nil
+}
+
+func (w *Writer) WriteTrailers(headers headers.Headers) error {
+	if w.writerState != trailers {
+		return errors.New("Writing trailers out of order. Make sure you write the status line, headers and chunked body first.")
+	}
+
+	data := ""
+	for key, val := range headers {
+		data += fmt.Sprintf("%s:%s\r\n", key, val)
+	}
+	data += "\r\n"
+
+	w.Write([]byte(data))
+	w.writerState = done
+	return nil
 }

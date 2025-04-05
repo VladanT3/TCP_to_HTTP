@@ -1,15 +1,18 @@
 package main
 
 import (
+	"crypto/sha256"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 
 	"github.com/VladanT3/TCP_to_HTTP/internal/request"
+	"github.com/VladanT3/TCP_to_HTTP/internal/request/headers"
 	"github.com/VladanT3/TCP_to_HTTP/internal/response"
 	"github.com/VladanT3/TCP_to_HTTP/internal/server"
 )
@@ -25,7 +28,7 @@ func handler(res *response.Writer, req *request.Request) {
 		}
 
 		custom_headers := response.GetDefaultHeaders(len(body))
-		custom_headers["content-type"] = "text/html"
+		custom_headers["Content-Type"] = "text/html"
 		err = res.WriteHeaders(custom_headers)
 		if err != nil {
 			log.Println("Error writing headers:", err)
@@ -47,7 +50,7 @@ func handler(res *response.Writer, req *request.Request) {
 		}
 
 		custom_headers := response.GetDefaultHeaders(len(body))
-		custom_headers["content-type"] = "text/html"
+		custom_headers["Content-Type"] = "text/html"
 		err = res.WriteHeaders(custom_headers)
 		if err != nil {
 			log.Println("Error writing headers:", err)
@@ -69,9 +72,9 @@ func handler(res *response.Writer, req *request.Request) {
 		}
 
 		custom_headers := response.GetDefaultHeaders(0)
-		custom_headers["content-type"] = "application/json"
-		custom_headers["transfer-encoding"] = "chunked"
-		delete(custom_headers, "content-length")
+		custom_headers["Transfer-Encoding"] = "chunked"
+		custom_headers["Trailers"] = "X-Content-SHA256, X-Content-Length"
+		delete(custom_headers, "Content-Length")
 		err = res.WriteHeaders(custom_headers)
 		if err != nil {
 			log.Println("Error writing headers:", err)
@@ -84,6 +87,8 @@ func handler(res *response.Writer, req *request.Request) {
 			return
 		}
 
+		body_buf := []byte{}
+		total := 0
 		for {
 			buf := make([]byte, 1024)
 			n, err := resp.Body.Read(buf)
@@ -99,12 +104,24 @@ func handler(res *response.Writer, req *request.Request) {
 				log.Println("Error writing chunked body:", err)
 				return
 			}
+			body_buf = append(body_buf, buf[:n]...)
+			total += n
 		}
 
 		_, err = res.WriteChunkedBodyDone()
 		if err != nil {
 			log.Println("Error writing chunked body done:", err)
 			return
+		}
+
+		sha := sha256.Sum256(body_buf)
+		trailers := make(headers.Headers)
+		trailers["X-Content-SHA256"] = string(sha[:])
+		trailers["X-Content-Length"] = strconv.Itoa(len(body_buf))
+
+		err = res.WriteTrailers(trailers)
+		if err != nil {
+			log.Println("Error writing trailers:", err)
 		}
 	} else {
 		body := "<html>\n\t<head>\n\t\t<title>200 OK</title>\n\t</head>\n\t<body>\n\t\t<h1>Success!</h1>\n\t\t<p>Your request was an absolute banger.</p>\n\t</body>\n</html>\n"
@@ -116,7 +133,7 @@ func handler(res *response.Writer, req *request.Request) {
 		}
 
 		custom_headers := response.GetDefaultHeaders(len(body))
-		custom_headers["content-type"] = "text/html"
+		custom_headers["Content-Type"] = "text/html"
 		err = res.WriteHeaders(custom_headers)
 		if err != nil {
 			log.Println("Error writing headers:", err)
