@@ -3,6 +3,7 @@ package response
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/VladanT3/TCP_to_HTTP/internal/request/headers"
 )
@@ -11,7 +12,25 @@ type ResponseWriter struct {
 	Data []byte
 }
 
-func (w *ResponseWriter) WriteStatusLine(status_code int) error {
+func (w *ResponseWriter) WriteResponse(status_code int, headers headers.Headers, body string) {
+	w.WriteStatusLine(status_code)
+
+	default_headers := GetDefaultHeaders()
+	for key, val := range default_headers {
+		_, ok := headers[key]
+		if !ok {
+			headers[key] = val
+		}
+	}
+
+	headers["Content-Length"] = strconv.Itoa(len(body))
+
+	w.WriteHeaders(headers)
+
+	w.WriteBody([]byte(body))
+}
+
+func (w *ResponseWriter) WriteStatusLine(status_code int) {
 	switch status_code {
 	case 100:
 		w.Write([]byte("HTTP/1.1 100 Continue\r\n"))
@@ -134,19 +153,18 @@ func (w *ResponseWriter) WriteStatusLine(status_code int) error {
 	default:
 		w.Write([]byte("HTTP/1.1 " + strconv.Itoa(int(status_code)) + " \r\n"))
 	}
-	return nil
 }
 
-func GetDefaultHeaders(content_len int) headers.Headers {
+func GetDefaultHeaders() headers.Headers {
 	header := make(headers.Headers)
-	header["Content-Length"] = strconv.Itoa(content_len)
+	header["Date"] = time.Now().Format("Mon, 02 Jan 2006 15:04:05 GMT")
 	header["Connection"] = "close"
-	header["Content-Type"] = "text/plain"
+	header["Content-Type"] = "text/html"
 
 	return header
 }
 
-func (w *ResponseWriter) WriteHeaders(headers headers.Headers) error {
+func (w *ResponseWriter) WriteHeaders(headers headers.Headers) {
 	data := ""
 	for key, val := range headers {
 		data += fmt.Sprintf("%s:%s\r\n", key, val)
@@ -154,36 +172,33 @@ func (w *ResponseWriter) WriteHeaders(headers headers.Headers) error {
 	data += "\r\n"
 
 	w.Write([]byte(data))
-	return nil
 }
 
-func (w *ResponseWriter) WriteBody(data []byte) error {
+func (w *ResponseWriter) WriteBody(data []byte) {
 	w.Write(data)
-	return nil
+}
+
+func (w *ResponseWriter) WriteChunkedBody(p []byte) int {
+	data := fmt.Sprintf("%X\r\n%s\r\n", len(p), p)
+	w.Write([]byte(data))
+	return len(data)
+}
+
+func (w *ResponseWriter) WriteChunkedBodyDone() int {
+	w.Write([]byte("0\r\n\r\n"))
+	return 5
+}
+
+func (w *ResponseWriter) WriteTrailers(headers headers.Headers) {
+	data := ""
+	for key, val := range headers {
+		data += fmt.Sprintf("%s:%s\r\n", key, val)
+	}
+	data += "\r\n"
+
+	w.Write([]byte(data))
 }
 
 func (w *ResponseWriter) Write(data []byte) {
 	w.Data = append(w.Data, data...)
-}
-
-func (w *ResponseWriter) WriteChunkedBody(p []byte) (int, error) {
-	data := fmt.Sprintf("%X\r\n%s\r\n", len(p), p)
-	w.Write([]byte(data))
-	return len(data), nil
-}
-
-func (w *ResponseWriter) WriteChunkedBodyDone() (int, error) {
-	w.Write([]byte("0\r\n\r\n"))
-	return 5, nil
-}
-
-func (w *ResponseWriter) WriteTrailers(headers headers.Headers) error {
-	data := ""
-	for key, val := range headers {
-		data += fmt.Sprintf("%s:%s\r\n", key, val)
-	}
-	data += "\r\n"
-
-	w.Write([]byte(data))
-	return nil
 }

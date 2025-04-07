@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/VladanT3/TCP_to_HTTP/internal/handlers"
 	"github.com/VladanT3/TCP_to_HTTP/internal/server"
 )
 
@@ -16,6 +17,8 @@ func main() {
 	if err != nil {
 		log.Fatal("Error starting server: ", err)
 	}
+
+	server.MapHandler("GET", "/hello/world", handlers.HandleHelloWorld)
 
 	log.Println("Server started on port", port)
 
