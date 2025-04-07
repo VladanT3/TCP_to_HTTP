@@ -86,7 +86,8 @@ func (s *Server) handle(conn net.Conn) {
 		}
 		return
 	}
-	body, http_err := handler(&response.ResponseWriter{}, &req)
+
+	body, http_err := handler(&res, &req)
 	if http_err != nil {
 		res.WriteResponse(http_err.StatusCode, res_header, http_err.Message)
 		_, err := conn.Write(res.Data)
