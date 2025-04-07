@@ -1,51 +1,139 @@
 package response
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
 	"github.com/VladanT3/TCP_to_HTTP/internal/request/headers"
 )
 
-type writer_state int
-
-const (
-	status_line writer_state = iota
-	field_lines
-	body
-	trailers
-	done
-)
-
-type Writer struct {
-	Data        []byte
-	writerState writer_state
+type ResponseWriter struct {
+	Data []byte
 }
 
-type StatusCode int
-
-const (
-	OK                  StatusCode = 200
-	BadRequest                     = 400
-	InternalServerError            = 500
-)
-
-func (w *Writer) WriteStatusLine(status_code StatusCode) error {
-	if w.writerState != status_line {
-		return errors.New("Writing status line out of order. Make sure you are writing the status line before headers and body.")
-	}
+func (w *ResponseWriter) WriteStatusLine(status_code int) error {
 	switch status_code {
+	case 100:
+		w.Write([]byte("HTTP/1.1 100 Continue\r\n"))
+	case 101:
+		w.Write([]byte("HTTP/1.1 101 Switching Protocols\r\n"))
+	case 103:
+		w.Write([]byte("HTTP/1.1 103 Early Hints\r\n"))
 	case 200:
 		w.Write([]byte("HTTP/1.1 200 OK\r\n"))
+	case 201:
+		w.Write([]byte("HTTP/1.1 201 Created\r\n"))
+	case 202:
+		w.Write([]byte("HTTP/1.1 202 Accepted\r\n"))
+	case 203:
+		w.Write([]byte("HTTP/1.1 203 Non-Authoritative Information\r\n"))
+	case 204:
+		w.Write([]byte("HTTP/1.1 204 No Content\r\n"))
+	case 205:
+		w.Write([]byte("HTTP/1.1 205 Reset Content\r\n"))
+	case 206:
+		w.Write([]byte("HTTP/1.1 206 Partial Content\r\n"))
+	case 207:
+		w.Write([]byte("HTTP/1.1 207 Multi Status\r\n"))
+	case 208:
+		w.Write([]byte("HTTP/1.1 208 Already Reported\r\n"))
+	case 226:
+		w.Write([]byte("HTTP/1.1 226 IM Used\r\n"))
+	case 300:
+		w.Write([]byte("HTTP/1.1 300 Multiple Choices\r\n"))
+	case 301:
+		w.Write([]byte("HTTP/1.1 301 Moved Permanently\r\n"))
+	case 302:
+		w.Write([]byte("HTTP/1.1 302 Found\r\n"))
+	case 303:
+		w.Write([]byte("HTTP/1.1 303 See Other\r\n"))
+	case 304:
+		w.Write([]byte("HTTP/1.1 304 Not Modified\r\n"))
+	case 307:
+		w.Write([]byte("HTTP/1.1 307 Temporary Redirect\r\n"))
+	case 308:
+		w.Write([]byte("HTTP/1.1 308 Permanent Redirect\r\n"))
 	case 400:
 		w.Write([]byte("HTTP/1.1 400 Bad Request\r\n"))
+	case 401:
+		w.Write([]byte("HTTP/1.1 401 Unauthorized\r\n"))
+	case 402:
+		w.Write([]byte("HTTP/1.1 402 Payment Required\r\n"))
+	case 403:
+		w.Write([]byte("HTTP/1.1 403 Forbidden\r\n"))
+	case 404:
+		w.Write([]byte("HTTP/1.1 404 Not Found\r\n"))
+	case 405:
+		w.Write([]byte("HTTP/1.1 405 Method Not Allowed\r\n"))
+	case 406:
+		w.Write([]byte("HTTP/1.1 406 Not Acceptable\r\n"))
+	case 407:
+		w.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\n"))
+	case 408:
+		w.Write([]byte("HTTP/1.1 408 Request Timeout\r\n"))
+	case 409:
+		w.Write([]byte("HTTP/1.1 409 Conflict\r\n"))
+	case 410:
+		w.Write([]byte("HTTP/1.1 410 Gone\r\n"))
+	case 411:
+		w.Write([]byte("HTTP/1.1 411 Length Required\r\n"))
+	case 412:
+		w.Write([]byte("HTTP/1.1 412 Precondition Failed\r\n"))
+	case 413:
+		w.Write([]byte("HTTP/1.1 413 Content Too Large\r\n"))
+	case 414:
+		w.Write([]byte("HTTP/1.1 414 URI Too Long\r\n"))
+	case 415:
+		w.Write([]byte("HTTP/1.1 415 Unsupported Media Type\r\n"))
+	case 416:
+		w.Write([]byte("HTTP/1.1 416 Range Not Satisfiable\r\n"))
+	case 417:
+		w.Write([]byte("HTTP/1.1 417 Expectation Failed\r\n"))
+	case 418:
+		w.Write([]byte("HTTP/1.1 418 I'm a teapot\r\n"))
+	case 421:
+		w.Write([]byte("HTTP/1.1 421 Misdirected Request\r\n"))
+	case 422:
+		w.Write([]byte("HTTP/1.1 422 Unprocessable Content\r\n"))
+	case 423:
+		w.Write([]byte("HTTP/1.1 423 Locked\r\n"))
+	case 424:
+		w.Write([]byte("HTTP/1.1 424 Failed Dependency\r\n"))
+	case 426:
+		w.Write([]byte("HTTP/1.1 426 Upgrade Required\r\n"))
+	case 428:
+		w.Write([]byte("HTTP/1.1 428 Precondition Required\r\n"))
+	case 429:
+		w.Write([]byte("HTTP/1.1 429 Too Many Requests\r\n"))
+	case 431:
+		w.Write([]byte("HTTP/1.1 431 Request Header Fields Too Large\r\n"))
+	case 451:
+		w.Write([]byte("HTTP/1.1 451 Unavailable For Legal Reasons\r\n"))
 	case 500:
 		w.Write([]byte("HTTP/1.1 500 Internal Server Error\r\n"))
+	case 501:
+		w.Write([]byte("HTTP/1.1 501 Not Implemented\r\n"))
+	case 502:
+		w.Write([]byte("HTTP/1.1 502 Bad Gateway\r\n"))
+	case 503:
+		w.Write([]byte("HTTP/1.1 503 Service Unavailable\r\n"))
+	case 504:
+		w.Write([]byte("HTTP/1.1 504 Gateway Timeout\r\n"))
+	case 505:
+		w.Write([]byte("HTTP/1.1 505 HTTP Version Not Supported\r\n"))
+	case 506:
+		w.Write([]byte("HTTP/1.1 506 Variant Also Negotiates\r\n"))
+	case 507:
+		w.Write([]byte("HTTP/1.1 507 Insufficient Storage\r\n"))
+	case 508:
+		w.Write([]byte("HTTP/1.1 508 Loop Detected\r\n"))
+	case 510:
+		w.Write([]byte("HTTP/1.1 510 Not Extended\r\n"))
+	case 511:
+		w.Write([]byte("HTTP/1.1 511 Network Authentication Required\r\n"))
 	default:
 		w.Write([]byte("HTTP/1.1 " + strconv.Itoa(int(status_code)) + " \r\n"))
 	}
-	w.writerState = field_lines
 	return nil
 }
 
@@ -58,11 +146,7 @@ func GetDefaultHeaders(content_len int) headers.Headers {
 	return header
 }
 
-func (w *Writer) WriteHeaders(headers headers.Headers) error {
-	if w.writerState != field_lines {
-		return errors.New("Writing headers out of order. Make sure you write the status line first and write headers before the body.")
-	}
-
+func (w *ResponseWriter) WriteHeaders(headers headers.Headers) error {
 	data := ""
 	for key, val := range headers {
 		data += fmt.Sprintf("%s:%s\r\n", key, val)
@@ -70,44 +154,30 @@ func (w *Writer) WriteHeaders(headers headers.Headers) error {
 	data += "\r\n"
 
 	w.Write([]byte(data))
-	w.writerState = body
 	return nil
 }
 
-func (w *Writer) WriteBody(data []byte) error {
-	if w.writerState != body {
-		return errors.New("Writing body out of order. Make sure you write the status line and headers first.")
-	}
+func (w *ResponseWriter) WriteBody(data []byte) error {
 	w.Write(data)
-	w.writerState = done
 	return nil
 }
 
-func (w *Writer) Write(data []byte) {
+func (w *ResponseWriter) Write(data []byte) {
 	w.Data = append(w.Data, data...)
 }
 
-func (w *Writer) WriteChunkedBody(p []byte) (int, error) {
-	if w.writerState != body {
-		return 0, errors.New("Writing body out of order. Make sure you write the status line and headers first.")
-	}
-
+func (w *ResponseWriter) WriteChunkedBody(p []byte) (int, error) {
 	data := fmt.Sprintf("%X\r\n%s\r\n", len(p), p)
 	w.Write([]byte(data))
 	return len(data), nil
 }
 
-func (w *Writer) WriteChunkedBodyDone() (int, error) {
+func (w *ResponseWriter) WriteChunkedBodyDone() (int, error) {
 	w.Write([]byte("0\r\n\r\n"))
-	w.writerState = trailers
 	return 5, nil
 }
 
-func (w *Writer) WriteTrailers(headers headers.Headers) error {
-	if w.writerState != trailers {
-		return errors.New("Writing trailers out of order. Make sure you write the status line, headers and chunked body first.")
-	}
-
+func (w *ResponseWriter) WriteTrailers(headers headers.Headers) error {
 	data := ""
 	for key, val := range headers {
 		data += fmt.Sprintf("%s:%s\r\n", key, val)
@@ -115,6 +185,5 @@ func (w *Writer) WriteTrailers(headers headers.Headers) error {
 	data += "\r\n"
 
 	w.Write([]byte(data))
-	w.writerState = done
 	return nil
 }
