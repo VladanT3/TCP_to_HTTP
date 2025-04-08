@@ -39,8 +39,8 @@ func ParseRequest(conn io.Reader) (Request, error) {
 		return Request{}, err
 	}
 
-	con_len, exists := request.Headers.Get("content-length")
-	if !exists {
+	con_len, ok := request.Headers["content-length"]
+	if !ok {
 		return request, nil
 	}
 	request.Body, err = body.ParseBody(req_buf[body_pos+2:total], con_len)

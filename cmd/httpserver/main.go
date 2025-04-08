@@ -19,6 +19,7 @@ func main() {
 	}
 
 	server.MapHandler("GET", "/hello/world", handlers.HandleHelloWorld)
+	server.MapHandler("GET", "/chunked", handlers.HandleChunkedEncoding)
 
 	log.Println("Server started on port", port)
 

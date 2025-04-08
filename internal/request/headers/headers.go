@@ -41,22 +41,3 @@ func ParseHeaders(data []byte) (Headers, error) {
 
 	return headers, nil
 }
-
-func (h Headers) Get(key string) (string, bool) {
-	val, ok := h[key]
-	if !ok {
-		return "", false
-	} else {
-		return val, true
-	}
-}
-
-func (h Headers) Edit(key, val string) error {
-	_, ok := h[key]
-	if !ok {
-		return errors.New("Header Key doesn't exist")
-	}
-
-	h[key] = val
-	return nil
-}
